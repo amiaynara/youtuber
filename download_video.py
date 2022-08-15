@@ -1,5 +1,4 @@
 # https://github.com/googleapis/google-api-python-client/blob/main/docs/start.md
-api_key = '<proper_key>'
 
 import json 
 import googleapiclient.discovery
@@ -9,6 +8,7 @@ from pytube.cli import on_progress
 
 # constants
 DOWNLOAD_RESOLUTION = '480p'
+DESTINATION = '../maths_xe_gate_720p'  # make this a command line argument
 
 class YouTubeWrapper():
   '''Wrapper to customise download from youtube'''
@@ -19,7 +19,7 @@ class YouTubeWrapper():
   def _get_secret(self):
     '''Method to get secret, this can be pushed to an abstract class'''
     # read file
-    file_name = '/Users/amiaynarayan/Projects/secrets/youtube/secrets.json'
+    file_name = '/Users/amiaynarayan/Projects/secrets/youtube/secrets.json' # make this an command line argument
     content = None
     try:
       with open(file_name, 'r') as eye:
@@ -40,7 +40,7 @@ class YouTubeWrapper():
       on_progress_callback=on_progress
     )
     print(f'Downloading {yt.title} ...')
-    yt and yt.streams.filter(res=download_resolution).first().download('./maths_xe_gate')
+    yt and yt.streams.filter(res=download_resolution).first().download(DESTINATION)
     
   def extract_playlist_links(self, play_list_url=None):
     '''Returns list of urls from a playlist on youtube'''
@@ -93,7 +93,7 @@ def main():
   links = yt.extract_playlist_links(playlist_url) or []
   for link in links:
     try:
-      yt.download_video(link, '360p')
+      yt.download_video(link, '720p')
     except:
       print('could not download', link)
 
