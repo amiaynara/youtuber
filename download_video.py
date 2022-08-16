@@ -1,37 +1,46 @@
 # https://github.com/googleapis/google-api-python-client/blob/main/docs/start.md
 
 import json 
+import argparse
 import googleapiclient.discovery
 from urllib.parse import parse_qs, urlparse
 from pytube import YouTube
 from pytube.cli import on_progress
 
 # constants
+DESTINATION = '../test_playlist'  # make this a command line argument
 DOWNLOAD_RESOLUTION = '480p'
-DESTINATION = '../maths_xe_gate_720p'  # make this a command line argument
+TEST_PLAYLIST = 'https://www.youtube.com/playlist?app=desktop&list=PL59FEE129ADFF2B12'
 
 class YouTubeWrapper():
   '''Wrapper to customise download from youtube'''
 
-  def __init__(self):
-    self.api_key = self._get_secret().get('api_key', None)
+  def __init__(self, api_key_filename):
+    self.api_key = self._get_secret(api_key_filename).get('api_key', None)
 
-  def _get_secret(self):
+  def _get_secret(self, api_key_filename):
     '''Method to get secret, this can be pushed to an abstract class'''
     # read file
-    file_name = '/Users/amiaynarayan/Projects/secrets/youtube/secrets.json' # make this an command line argument
     content = None
     try:
-      with open(file_name, 'r') as eye:
+      with open(api_key_filename, 'r') as eye:
         content = eye.read()
     except Exception as error:
       print(f'ERROR: file {file_name} not found')
       print(error)
     return content and json.loads(content)
 
-  def download_playlist(self, playlist_link):
+  def download_playlist(self, playlist_link, destination, download_quality=DOWNLOAD_RESOLUTION):
     '''Use pytube library to download the youtube playlist'''
-    pass
+    if not playlist_link:
+      playlist_link = TEST_PLAYLIST
+      print(f'WARNING: Playlist link was not provided, as a demo downloading videos from {TEST_PLAYLIST}')
+    links = self.extract_playlist_links(playlist_link) or []
+    for link in links:
+      try:
+        self.download_video(link, download_quality)
+      except:
+        print('ERROR: Could not download', link)
   
   def download_video(self, video_link, download_resolution=DOWNLOAD_RESOLUTION):
     '''Use pytube to dowload a video'''
@@ -72,35 +81,25 @@ class YouTubeWrapper():
       print(error)
     print(message)
 
-  def percent(self, tem, total):
-    perc = (float(tem) / float(total)) * float(100)
-    return perc
-
-  def progress_function(self, stream, chunk, bytes_remaining):
-    '''Method that tracks the progess of download'''
-    size = stream.filesize
-    p = 0
-    print('progress function was called', bytes_remaining, size)
-    while p <= 100:
-      progress = p
-      print(str(p)+'%')
-      p = self.percent(bytes_remaining, size)
-
 def main():
   args = read_args()
-  yt = YouTubeWrapper()
-  playlist_url = 'https://www.youtube.com/watch?v=WZMfFqIXKlw&list=PLiSPNzs4fD9vGQD-aUVKpDuzsRaXekgjj' # Maths xe gate playlist
-  links = yt.extract_playlist_links(playlist_url) or []
-  for link in links:
-    try:
-      yt.download_video(link, '720p')
-    except:
-      print('could not download', link)
+  api_key_filename = args.api_key or '/Users/amiaynarayan/Projects/secrets/youtube/secrets.json'
+  yt = YouTubeWrapper(api_key_filename)
+  #gate_playlist = 'https://www.youtube.com/watch?v=WZMfFqIXKlw&list=PLiSPNzs4fD9vGQD-aUVKpDuzsRaXekgjj' # Maths xe gate playlist
+  gate_playlist = args.playlist_url
+  download_quality = args.video_url
+  destination = args.folder_name
+  yt.download_playlist(gate_playlist, destination, download_quality)
 
 def read_args():
   '''Read the arguments'''
-  args = {}
-  return args
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--api-key", help="api key json file")
+  parser.add_argument("--folder-name", help="Folder name where videos will be downloaded", default=DESTINATION)
+  parser.add_argument("--playlist-url", help="URL of the playlist, we want to work on")
+  parser.add_argument("--video-url", help="URL of the video, we want to work on")
+  parser.add_argument("--video-quality", help="Quality of video we want to work with", default=DOWNLOAD_RESOLUTION)
+  return parser.parse_args()
 
 if __name__ == '__main__':
   main()
